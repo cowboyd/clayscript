@@ -11,18 +11,13 @@ This assumes a functioning WASM toolchain with `clang`
 First, build `clay.wasm`
 
 ```shellsession
-$ deno task build
+deno task build
 ```
 
 Then run the experiment
 
 ```shellsession
-$ deno main.ts
+deno main.ts
 ```
 
-## Open Questions
-
-- How do you pass in a complex struct like ClayDimensions as an argument to a function?
-
 [clay]: https://github.com/nicbarker/clay
-

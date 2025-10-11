@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    - "--target=wasm32"
+    - "-nostdlib"
+    - "-Wl,--no-entry"
+    - "-Wl,--import-memory"
+    - "-Wl,--allow-undefined"
+    - "-Wl,--stack-first"
