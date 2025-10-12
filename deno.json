@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "build": "clang -Os -DCLAY_WASM --target=wasm32 -nostdlib -Wl,--no-entry -Wl,--import-memory -Wl,--allow-undefined -Wl,--stack-first -Wl,--export-all -o clay.wasm clay.c"
+    "build": "clang -Os --target=wasm32 -nostdlib -Wl,--no-entry -Wl,--import-memory -Wl,--allow-undefined -Wl,--stack-first -Wl,--export-all -o clay.wasm clay.c"
   },
   "lint": {
     "rules": {

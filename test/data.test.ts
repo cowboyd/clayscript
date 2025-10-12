@@ -1,5 +1,14 @@
 import { describe, it } from "@std/testing/bdd";
-import { f32, i32, optional, read, struct, write } from "../struct.ts";
+import {
+  deref,
+  f32,
+  i32,
+  optional,
+  ptr,
+  read,
+  struct,
+  write,
+} from "../struct.ts";
 import { expect } from "@std/expect";
 
 describe("linear data", () => {
@@ -76,6 +85,20 @@ describe("linear data", () => {
       a: { x: 0, y: 0 },
       b: { x: 3, y: 4 },
     });
+  });
+
+  it("has pointers that can reference layouts at other places in memory", () => {
+    let buffer = new ArrayBuffer(100);
+
+    const Point = struct({ x: f32(), y: f32() });
+
+    const Point_ptr = ptr(Point);
+
+    write(Point, 50, buffer, { x: 6, y: 7 });
+
+    write(Point_ptr, 0, buffer, 50);
+
+    expect(deref(Point_ptr, 0, buffer)).toEqual({ x: 6, y: 7 });
   });
 
   it.skip("can handle enums", () => {

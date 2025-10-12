@@ -1,10 +1,11 @@
-export type Attrs<T extends object> = {
+export type Attrs<T> = {
   [K in keyof T]: TypeDef<T[K]>;
 };
 
 export type Struct<T> = {
   type: "struct";
   byteLength: number;
+  attrs: Attrs<T>;
   entries: [keyof T, TypeDef<T[keyof T]>][];
 };
 
@@ -18,6 +19,12 @@ export type Optional<T> = {
   type: "optional";
   numeric: boolean;
   byteLength: number;
+  typedef: TypeDef<T>;
+};
+
+export type Ptr<T> = TypeDef<number> & {
+  type: "i32";
+  byteLength: 4;
   typedef: TypeDef<T>;
 };
 
@@ -38,12 +45,17 @@ export const f32 = (): TypeDef<number> => ({ type: "f32", byteLength: 4 });
 export const f64 = (): TypeDef<number> => ({ type: "f64", byteLength: 8 });
 
 export const bool = i32;
-export const ptr = i32;
+export const ptr = <T>(target: TypeDef<T>) =>
+  ({
+    type: "i32",
+    byteLength: 4,
+    typedef: target,
+  }) as Ptr<T>;
 
 export function struct<T extends object>(
-  def: Attrs<T>,
+  attrs: Attrs<T>,
 ): TypeDef<T> {
-  let entries = Object.entries(def) as [
+  let entries = Object.entries(attrs) as [
     keyof Attrs<T>,
     Attrs<T>[keyof Attrs<T>],
   ][];
@@ -54,6 +66,7 @@ export function struct<T extends object>(
 
   return {
     type: "struct",
+    attrs,
     entries,
     byteLength,
   } as TypeDef<T>;
@@ -167,6 +180,16 @@ export function write<T>(
     }
   }
 }
+
+export function deref<T>(
+  ptr: Ptr<T>,
+  offset: number,
+  buffer: ArrayBufferLike,
+): T {
+  let address = read(ptr, offset, buffer);
+  return read(ptr.typedef, address, buffer);
+}
+
 function zero<T>(
   typedef: TypeDef<T>,
   offset: number,

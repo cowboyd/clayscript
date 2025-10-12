@@ -13,13 +13,13 @@ export const ClayVector2 = struct({
 export const ClayString = struct({
   isStaticallyAllocated: bool(),
   length: i32(),
-  chars: ptr(),
+  chars: ptr(i32()), //TODO: ptr uint8
 });
 
 export const ClayErrorData = struct({
   errorType: i32(),
   errorText: ClayString,
-  userData: ptr(),
+  userData: i32(),
 });
 
 export const ClayElementId = struct({
@@ -109,3 +109,18 @@ export const ClayElementDeclaration = struct({
 //     // A pointer that will be transparently passed through to resulting render commands.
 //     void *userData;
 // } Clay_ElementDeclaration;
+
+export const ClayRenderCommandArray = struct({
+  capacity: i32(),
+  length: i32(),
+  internalArray: ptr(i32()),
+});
+
+// typedef struct Clay_RenderCommandArray {
+//     // The underlying max capacity of the array, not necessarily all initialized.
+//     int32_t capacity;
+//     // The number of initialized elements in this array. Used for loops and iteration.
+//     int32_t length;
+//     // A pointer to the first element in the internal array.
+//     Clay_RenderCommand* internalArray;
+// } Clay_RenderCommandArray;

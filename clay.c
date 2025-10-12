@@ -1,6 +1,9 @@
 #define CLAY_IMPLEMENTATION
+#define CLAY_WASM
 #include "clay.h"
 #include <stdint.h>
+
+#define EXPORT(name) __attribute__((export_name(name)))
 
 /**
  * Invoke a callback from C back into javascript.
@@ -13,24 +16,33 @@ static void errorHandlerFunction(Clay_ErrorData data) {
   invokeCallback(callbackId, &data);
 }
 
-CLAY_WASM_EXPORT("cbtest")
-void cbtest(uint32_t id) { invokeCallback(id, 0); }
+EXPORT("MinMemorySize")
+uint32_t clayjs_MinMemorySize() { return Clay_MinMemorySize(); }
 
-CLAY_WASM_EXPORT("clayjs_OpenElementWithId")
+EXPORT("OpenElementWithId")
 void clayjs_OpenElementWithId(const Clay_ElementId *id) {
   return Clay__OpenElementWithId(*id);
 }
 
-CLAY_WASM_EXPORT("clayjs_CloseElement")
+EXPORT("CloseElement")
 void clayjs_CloseElement() { return Clay__CloseElement(); }
 
-CLAY_WASM_EXPORT("clayjs_ConfigureOpenElement")
+EXPORT("ConfigureOpenElement")
 void clayjs_ConfigureOpenElement(const Clay_ElementDeclaration *declaration) {
   return Clay__ConfigureOpenElement(*declaration);
 }
 
-CLAY_WASM_EXPORT("clayjs_Initialize")
-void *clayjs_Initialize(size_t size, void *memory,
+EXPORT("BeginLayout")
+void clayjs_BeginLayout() { Clay_BeginLayout(); }
+
+EXPORT("EndLayout")
+void clayjs_EndLayout(Clay_RenderCommandArray *dest) {
+  *dest = Clay_EndLayout();
+}
+
+EXPORT("Initialize")
+void *clayjs_Initialize(size_t size,
+                        void *memory,
                         Clay_Dimensions *layoutDimensions,
                         uint32_t errorHandlerId) {
 
