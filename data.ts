@@ -1,4 +1,17 @@
-import { bool, char, f32, i32, ptr, struct, union } from "./typedef.ts";
+import {
+  bool,
+  char,
+  enumOf,
+  f32,
+  i32,
+  int16,
+  ptr,
+  struct,
+  uint16,
+  uint32,
+  uint8,
+  union,
+} from "./typedef.ts";
 
 export const ClayDimensions = struct({
   width: f32(),
@@ -36,23 +49,25 @@ export const ClayColor = struct({
   a: f32(),
 });
 
+// Controls the sizing of this element along one axis inside its parent container.
 export const ClaySizingMinMax = struct({
   min: f32(),
   max: f32(),
 });
 
-// Controls the sizing of this element along one axis inside its parent container.
-// typedef struct Clay_SizingAxis {
-//     union {
-//         Clay_SizingMinMax minMax; // Controls the minimum and maximum size in pixels that this element is allowed to grow or shrink to, overriding sizing types such as FIT or GROW.
-//         float percent; // Expects 0-1 range. Clamps the axis size to a percent of the parent container's axis size minus padding and child gaps.
-//     } size;
-//     Clay__SizingType type; // Controls how the element takes up space inside its parent container.
-// } Clay_SizingAxis;
+const ClaySizingType = enumOf(
+  "SIZING_TYPE_FIT",
+  "SIZING_TYPE_GROW",
+  "SIZING_TYPE_PERCENT",
+  "SIZING_TYPE_FIXED",
+);
 
 export const ClaySizingAxis = struct({
-  size: union(ClaySizingMinMax, f32()),
-  type: i32(),
+  size: union({
+    minMax: ClaySizingMinMax,
+    percent: f32(),
+  }),
+  type: ClaySizingType,
 });
 
 export const ClaySizing = struct({
@@ -61,29 +76,138 @@ export const ClaySizing = struct({
 });
 
 export const ClayPadding = struct({
-  left: i32(),
-  right: i32(),
-  top: i32(),
-  bottom: i32(),
+  left: uint16(),
+  right: uint16(),
+  top: uint16(),
+  bottom: uint16(),
 });
+
+const ClayLayoutAlignmentX = enumOf(
+  "ALIGN_X_LEFT",
+  "ALIGN_X_RIGHT",
+  "ALIGN_X_CENTER",
+);
+
+const ClayLayoutAlignmentY = enumOf(
+  "ALIGN_Y_TOP",
+  "ALIGN_Y_BOTTOM",
+  "ALIGN_Y_CENTER",
+);
+
+const ClayChildAlignment = struct({
+  x: ClayLayoutAlignmentX,
+  y: ClayLayoutAlignmentY,
+});
+
+export const ClayLayoutDirection = enumOf(
+  "LEFT_TO_RIGHT",
+  "RIGHT_TO_LEFT",
+);
 
 export const ClayLayoutConfig = struct({
   sizing: ClaySizing,
   padding: ClayPadding,
-  childGap: i32(),
-  //  childAlignment: ClayChildAlignment;
-  //   typedef struct Clay_LayoutConfig {
-  //     Clay_Sizing sizing; // Controls the sizing of this element inside it's parent container, including FIT, GROW, PERCENT and FIXED sizing.
-  //     Clay_Padding padding; // Controls "padding" in pixels, which is a gap between the bounding box of this element and where its children will be placed.
-  //     uint16_t childGap; // Controls the gap in pixels between child elements along the layout axis (horizontal gap for LEFT_TO_RIGHT, vertical gap for TOP_TO_BOTTOM).
-  //     Clay_ChildAlignment childAlignment; // Controls how child elements are aligned on each axis.
-  //     Clay_LayoutDirection layoutDirection; // Controls the direction in which child elements will be automatically laid out.
-  // } Clay_LayoutConfig;
+  childGap: uint16(),
+  childAlignment: ClayChildAlignment,
+  layoutDirection: ClayLayoutDirection,
+});
+
+export const ClayCornerRadius = struct({
+  topLeft: f32(),
+  topRight: f32(),
+  bottomLeft: f32(),
+  bottomRight: f32(),
+});
+
+export const ClayAspectRatioConfig = struct({
+  aspectRatio: f32(),
+});
+
+export const ClayImageElementConfig = struct({
+  imageData: ptr(),
+});
+
+export const ClayFloatingAttachPointType = enumOf(
+  "ATTACH_POINT_LEFT_TOP",
+  "ATTACH_POINT_LEFT_CENTER",
+  "ATTACH_POINT_LEFT_BOTTOM",
+  "ATTACH_POINT_CENTER_TOP",
+  "ATTACH_POINT_CENTER_CENTER",
+  "ATTACH_POINT_CENTER_BOTTOM",
+  "ATTACH_POINT_RIGHT_TOP",
+  "ATTACH_POINT_RIGHT_CENTER",
+  "ATTACH_POINT_RIGHT_BOTTOM",
+);
+
+export const ClayFloatingAttachPoints = struct({
+  element: ClayFloatingAttachPointType,
+  parent: ClayFloatingAttachPointType,
+});
+
+export const ClayPointerCaptureMode = enumOf(
+  "POINTER_CAPTURE_MODE_CAPTURE",
+  "POINTER_CAPTURE_MODE_PASSTHROUGH",
+);
+
+export const ClayFloatingAttachToElement = enumOf(
+  "ATTACH_TO_NONE",
+  "ATTACH_TO_PARENT",
+  "ATTACH_TO_ELEMENT_WITH_ID",
+  "ATTACH_TO_ROOT",
+);
+
+export const ClayFloatingClipToElement = enumOf(
+  "CLIP_TO_NONE",
+  "CLIP_TO_ATTACHED_PARENT",
+);
+
+export const ClayFloatingElementConfig = struct({
+  offset: ClayVector2,
+  expand: ClayDimensions,
+  parentId: uint32(),
+  zIndex: int16(),
+  attachPoints: ClayFloatingAttachPoints,
+  pointerCaptureMode: ClayPointerCaptureMode,
+  attachTo: ClayFloatingAttachToElement,
+  clipTo: ClayFloatingClipToElement,
+});
+
+export const ClayCustomElementConfig = struct({
+  customData: ptr()
+});
+
+export const ClayClipElementConfig = struct({
+  horizontal: bool(),
+  vertical: bool(),
+  childOffset: ClayVector2
+});
+
+export const ClayBorderWidth = struct({
+  left: uint16(),
+  right: uint16(),
+  top: uint16(),
+  bottom: uint16(),
+  betweenChildren: uint16(),
+});
+
+export const ClayBorderElementConfig = struct({
+  color: ClayColor,
+  width: ClayBorderWidth,
 });
 
 export const ClayElementDeclaration = struct({
   layout: ClayLayoutConfig,
+  backgroundColor: ClayColor,
+  cornerRadius: ClayCornerRadius,
+  aspectRatio: ClayAspectRatioConfig,
+  image: ClayImageElementConfig,
+  floating: ClayFloatingElementConfig,
+  custom: ClayCustomElementConfig,
+  clip: ClayClipElementConfig,
+  border: ClayBorderElementConfig,
+  userData: ptr(),
 });
+
 // typedef struct Clay_ElementDeclaration {
 //     // Controls various settings that affect the size and position of an element, as well as the sizes and positions of any child elements.
 //     Clay_LayoutConfig layout;

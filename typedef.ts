@@ -11,7 +11,7 @@ export type Struct<T> = {
 };
 
 export type Num<T> = {
-  type: "i32" | "f32" | "f64" | "uint8";
+  type: "i32" | "f32" | "f64" | "uint8" | "uint16" | "uint32" | "int16";
   byteLength: number;
   T?: T;
 };
@@ -52,10 +52,20 @@ export const i32 = (): TypeDef<number> => ({ type: "i32", byteLength: 4 });
 export const f32 = (): TypeDef<number> => ({ type: "f32", byteLength: 4 });
 export const f64 = (): TypeDef<number> => ({ type: "f64", byteLength: 8 });
 export const uint8 = (): TypeDef<number> => ({ type: "uint8", byteLength: 1 });
+export const uint16 = (): TypeDef<number> => ({
+  type: "uint16",
+  byteLength: 2,
+});
+export const uint32 = (): TypeDef<number> => ({
+  type: "uint32",
+  byteLength: 4,
+});
+export const int16 = (): TypeDef<number> => ({ type: "int16", byteLength: 2});
+
 export const char = uint8;
 export const bool = i32;
 
-export const ptr = <T>(target: TypeDef<T>) =>
+export const ptr = <T>(target: TypeDef<T> = char() as TypeDef<T>) =>
   ({
     type: "i32",
     byteLength: 4,
@@ -137,37 +147,6 @@ export function union<T>(attrs: Attrs<T>): Union<Attrs<T>> {
   return Object.assign(raw(byteLength), constructors) as Union<Attrs<T>>;
 }
 
-// export function union<A, B>(
-//   ...typedefs: [TypeDef<A>, TypeDef<B>]
-// ): TypeDef<[number, A | B]>;
-// export function union<A, B, C>(
-//   ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>]
-// ): TypeDef<[number, A | B | C]>;
-// export function union<A, B, C, D>(
-//   ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>, TypeDef<D>]
-// ): TypeDef<[number, A | B | C | D]>;
-// export function union<A, B, C, D, E>(
-//   ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>, TypeDef<D>, TypeDef<E>]
-// ): TypeDef<[number, A | B | C | D | E]>;
-// export function union<A, B, C, D, E, F>(
-//   ...typedefs: [
-//     TypeDef<A>,
-//     TypeDef<B>,
-//     TypeDef<C>,
-//     TypeDef<D>,
-//     TypeDef<E>,
-//     TypeDef<F>,
-//   ]
-// ): TypeDef<[number, A | B | C | D | E | F]>;
-// // deno-lint-ignore no-explicit-any
-// export function union(...typedefs: TypeDef<any>[]): TypeDef<[number, any]> {
-//   return {
-
-//     byteLength: Math.max(...typedefs.map((t) => t.byteLength)),
-//     typedefs,
-//   };
-// }
-
 export function read<T>(
   typedef: TypeDef<T>,
   offset: number,
@@ -203,6 +182,12 @@ export function read<T>(
       return read(typedef.typedef, offset, buffer);
     case "uint8":
       return view.getUint8(0) as T;
+    case "uint16":
+      return view.getUint16(0, true) as T;
+    case "uint32":
+      return view.getUint32(0, true) as T;
+    case "int16":
+      return view.getInt16(0, true) as T;
     case "i32":
       return view.getInt32(0, true) as T;
     case "f32":
@@ -222,6 +207,12 @@ export function write<T>(
   switch (typedef.type) {
     case "uint8":
       return view.setUint8(0, value as number);
+    case "uint16":
+      return view.setUint16(0, value as number, true);
+    case "uint32":
+      return view.setUint32(0, value as number, true);
+    case "int16":
+      return view.setInt16(0, value as number, true);
     case "i32":
       return view.setInt32(0, value as number, true);
     case "f32":
