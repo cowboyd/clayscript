@@ -1,6 +1,7 @@
 import { describe, it } from "@std/testing/bdd";
 import {
   deref,
+  enumOf,
   f32,
   i32,
   optional,
@@ -8,7 +9,7 @@ import {
   read,
   struct,
   write,
-} from "../struct.ts";
+} from "../typedef.ts";
 import { expect } from "@std/expect";
 
 describe("linear data", () => {
@@ -101,7 +102,27 @@ describe("linear data", () => {
     expect(deref(Point_ptr, 0, buffer)).toEqual({ x: 6, y: 7 });
   });
 
-  it.skip("can handle enums", () => {
+  it("can handle enums", () => {
+    let buffer = new ArrayBuffer(100);
+    let view = new DataView(buffer);
+
+    let Letters = enumOf("X", "Y", "Z");
+    let Holder = struct({
+      a: Letters,
+      b: Letters,
+    });
+    write(Holder, 0, buffer, {
+      a: "Z",
+      b: "Y",
+    });
+
+    expect(view.getUint8(0)).toEqual(2);
+    expect(view.getUint8(1)).toEqual(1);
+
+    expect(read(Holder, 0, buffer)).toEqual({
+      a: "Z",
+      b: "Y",
+    });
   });
 });
 

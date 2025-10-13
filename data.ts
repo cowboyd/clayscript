@@ -1,4 +1,4 @@
-import { bool, f32, i32, ptr, struct, union } from "./struct.ts";
+import { bool, char, f32, i32, ptr, struct, union } from "./typedef.ts";
 
 export const ClayDimensions = struct({
   width: f32(),
@@ -13,7 +13,7 @@ export const ClayVector2 = struct({
 export const ClayString = struct({
   isStaticallyAllocated: bool(),
   length: i32(),
-  chars: ptr(i32()), //TODO: ptr uint8
+  chars: ptr(char()),
 });
 
 export const ClayErrorData = struct({
