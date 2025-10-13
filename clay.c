@@ -41,8 +41,7 @@ void clayjs_EndLayout(Clay_RenderCommandArray *dest) {
 }
 
 EXPORT("Initialize")
-void *clayjs_Initialize(size_t size,
-                        void *memory,
+void *clayjs_Initialize(size_t size, void *memory,
                         Clay_Dimensions *layoutDimensions,
                         uint32_t errorHandlerId) {
 
@@ -52,3 +51,13 @@ void *clayjs_Initialize(size_t size,
                                     .userData = (void *)errorHandlerId};
   return Clay_Initialize(arena, *layoutDimensions, errorHandler);
 }
+
+/* typedef struct { */
+/*   uint32_t a; */
+/* } X; */
+
+
+/* EXPORT("tester") */
+/* void tester(uint32_t *ptr) { */
+/*   *ptr = sizeof(float); */
+/* } */

@@ -30,11 +30,13 @@ let commands = read(ClayRenderCommandArray, native.xbuf, native.memory.buffer);
 
 console.log({ commands });
 
-// clay.tester(native.xbuf);
+clay.tester(native.xbuf);
 
-// let bytes = new DataView(native.memory.buffer);
+let bytes = native.memory.buffer.slice(native.xbuf, native.xbuf + 8);
+console.log(bytes);
 
-// let a = bytes.getUint8(native.xbuf);
-// let b = bytes.getUint8(native.xbuf + 1);
+let view = new DataView(bytes);
 
-// console.log({ a, b });
+let a = view.getUint32(0, true);
+
+console.log({ a });

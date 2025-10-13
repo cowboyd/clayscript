@@ -16,6 +16,12 @@ export type Num<T> = {
   T?: T;
 };
 
+export type Bool<T> = {
+  type: "bool";
+  byteLength: 1;
+  T?: T;
+};
+
 export type Raw<T> = {
   type: "raw";
   byteLength: number;
@@ -42,7 +48,13 @@ export type Enum<T> = {
   constants: T extends string ? T[] : never;
 };
 
-export type TypeDef<T> = Num<T> | Struct<T> | Optional<T> | Enum<T> | Raw<T>;
+export type TypeDef<T> =
+  | Num<T>
+  | Bool<T>
+  | Struct<T>
+  | Optional<T>
+  | Enum<T>
+  | Raw<T>;
 
 export type TypeOf<Def extends TypeDef<unknown>> = Def extends TypeDef<infer T>
   ? T
@@ -60,10 +72,18 @@ export const uint32 = (): TypeDef<number> => ({
   type: "uint32",
   byteLength: 4,
 });
-export const int16 = (): TypeDef<number> => ({ type: "int16", byteLength: 2});
+export const int16 = (): TypeDef<number> => ({ type: "int16", byteLength: 2 });
+
+export function bool(): Bool<boolean> {
+  return {
+    type: "bool",
+    byteLength: 1,
+  };
+}
+
+export const float = f32;
 
 export const char = uint8;
-export const bool = i32;
 
 export const ptr = <T>(target: TypeDef<T> = char() as TypeDef<T>) =>
   ({
@@ -176,6 +196,10 @@ export function read<T>(
       }
       return constant;
     }
+    case "bool": {
+      let value = view.getUint8(0);
+      return (value !== 0 as unknown) as T;
+    }
     case "raw":
       return buffer.slice(offset, typedef.byteLength) as T;
     case "optional":
@@ -238,6 +262,10 @@ export function write<T>(
         );
       }
       return view.setUint8(0, index);
+    }
+    case "bool": {
+      view.setUint8(0, !value ? 0 : 1);
+      break;
     }
     case "optional": {
       if (value == null) {

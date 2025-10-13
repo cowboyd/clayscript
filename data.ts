@@ -2,25 +2,24 @@ import {
   bool,
   char,
   enumOf,
-  f32,
+  float,
   i32,
   int16,
   ptr,
   struct,
   uint16,
   uint32,
-  uint8,
   union,
 } from "./typedef.ts";
 
 export const ClayDimensions = struct({
-  width: f32(),
-  height: f32(),
+  width: float(),
+  height: float(),
 });
 
 export const ClayVector2 = struct({
-  x: f32(),
-  y: f32(),
+  x: float(),
+  y: float(),
 });
 
 export const ClayString = struct({
@@ -29,10 +28,23 @@ export const ClayString = struct({
   chars: ptr(char()),
 });
 
+// Represents the type of error clay encountered while computing layout.
+export const ClayErrorType = enumOf(
+  "ERROR_TYPE_TEXT_MEASUREMENT_FUNCTION_NOT_PROVIDED",
+  "ERROR_TYPE_ARENA_CAPACITY_EXCEEDED",
+  "ERROR_TYPE_ELEMENTS_CAPACITY_EXCEEDED",
+  "ERROR_TYPE_TEXT_MEASUREMENT_CAPACITY_EXCEEDED",
+  "ERROR_TYPE_DUPLICATE_ID",
+  "ERROR_TYPE_FLOATING_CONTAINER_PARENT_NOT_FOUND",
+  "ERROR_TYPE_PERCENTAGE_OVER_1",
+  "ERROR_TYPE_INTERNAL_ERROR",
+  "ERROR_TYPE_UNBALANCED_OPEN_CLOSE",
+);
+
 export const ClayErrorData = struct({
-  errorType: i32(),
+  errorType: ClayErrorType,
   errorText: ClayString,
-  userData: i32(),
+  userData: ptr(),
 });
 
 export const ClayElementId = struct({
@@ -43,16 +55,16 @@ export const ClayElementId = struct({
 });
 
 export const ClayColor = struct({
-  r: f32(),
-  g: f32(),
-  b: f32(),
-  a: f32(),
+  r: float(),
+  g: float(),
+  b: float(),
+  a: float(),
 });
 
 // Controls the sizing of this element along one axis inside its parent container.
 export const ClaySizingMinMax = struct({
-  min: f32(),
-  max: f32(),
+  min: float(),
+  max: float(),
 });
 
 const ClaySizingType = enumOf(
@@ -65,7 +77,7 @@ const ClaySizingType = enumOf(
 export const ClaySizingAxis = struct({
   size: union({
     minMax: ClaySizingMinMax,
-    percent: f32(),
+    percent: float(),
   }),
   type: ClaySizingType,
 });
@@ -113,14 +125,14 @@ export const ClayLayoutConfig = struct({
 });
 
 export const ClayCornerRadius = struct({
-  topLeft: f32(),
-  topRight: f32(),
-  bottomLeft: f32(),
-  bottomRight: f32(),
+  topLeft: float(),
+  topRight: float(),
+  bottomLeft: float(),
+  bottomRight: float(),
 });
 
 export const ClayAspectRatioConfig = struct({
-  aspectRatio: f32(),
+  aspectRatio: float(),
 });
 
 export const ClayImageElementConfig = struct({
@@ -173,13 +185,13 @@ export const ClayFloatingElementConfig = struct({
 });
 
 export const ClayCustomElementConfig = struct({
-  customData: ptr()
+  customData: ptr(),
 });
 
 export const ClayClipElementConfig = struct({
   horizontal: bool(),
   vertical: bool(),
-  childOffset: ClayVector2
+  childOffset: ClayVector2,
 });
 
 export const ClayBorderWidth = struct({
@@ -213,7 +225,7 @@ export const ClayElementDeclaration = struct({
 //     Clay_LayoutConfig layout;
 //     // Controls the background color of the resulting element.
 //     // By convention specified as 0-255, but interpretation is up to the renderer.
-//     // If no other config is specified, .backgroundColor will generate a RECTANGLE render command, otherwise it will be passed as a property to IMAGE or CUSTOM render commands.
+//     // Iff no other config is specified, .backgroundColor will generate a RECTANGLE render command, otherwise it will be passed as a property to IMAGE or CUSTOM render commands.
 //     Clay_Color backgroundColor;
 //     // Controls the "radius", or corner rounding of elements, including rectangles, borders and images.
 //     Clay_CornerRadius cornerRadius;
