@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 export type Attrs<T> = {
   [K in keyof T]: TypeDef<T[K]>;
 };
@@ -13,6 +14,13 @@ export type Num<T> = {
   type: "i32" | "f32" | "f64" | "uint8";
   byteLength: number;
   T?: T;
+};
+
+export type Raw<T> = {
+  type: "raw";
+  byteLength: number;
+  T?: T;
+  alloc<A>(typedef: TypeDef<A>, value: A): ArrayBuffer;
 };
 
 export type Optional<T> = {
@@ -34,13 +42,7 @@ export type Enum<T> = {
   constants: T extends string ? T[] : never;
 };
 
-export type Union<T> = {
-  type: "union";
-  byteLength: number;
-  typedefs: TypeDef<T>[];
-};
-
-export type TypeDef<T> = Num<T> | Struct<T> | Optional<T> | Union<T> | Enum<T>;
+export type TypeDef<T> = Num<T> | Struct<T> | Optional<T> | Enum<T> | Raw<T>;
 
 export type TypeOf<Def extends TypeDef<unknown>> = Def extends TypeDef<infer T>
   ? T
@@ -51,8 +53,8 @@ export const f32 = (): TypeDef<number> => ({ type: "f32", byteLength: 4 });
 export const f64 = (): TypeDef<number> => ({ type: "f64", byteLength: 8 });
 export const uint8 = (): TypeDef<number> => ({ type: "uint8", byteLength: 1 });
 export const char = uint8;
-
 export const bool = i32;
+
 export const ptr = <T>(target: TypeDef<T>) =>
   ({
     type: "i32",
@@ -67,9 +69,22 @@ export function enumOf<T extends string>(...constants: T[]): Enum<T> {
     constants,
   } as Enum<T>;
 }
+
+export function raw(byteLength: number): Raw<ArrayBuffer> {
+  return {
+    type: "raw",
+    byteLength,
+    alloc<T>(typedef: TypeDef<T>, value: T): ArrayBuffer {
+      let buffer = new ArrayBuffer(byteLength);
+      write(typedef, 0, buffer, value);
+      return buffer;
+    },
+  };
+}
+
 export function struct<T extends object>(
   attrs: Attrs<T>,
-): TypeDef<T> {
+): Struct<T> {
   let entries = Object.entries(attrs) as [
     keyof Attrs<T>,
     Attrs<T>[keyof Attrs<T>],
@@ -84,7 +99,7 @@ export function struct<T extends object>(
     attrs,
     entries,
     byteLength,
-  } as TypeDef<T>;
+  };
 }
 
 export function optional<T>(typedef: TypeDef<T>): TypeDef<T | void> {
@@ -98,37 +113,60 @@ export function optional<T>(typedef: TypeDef<T>): TypeDef<T | void> {
   } as TypeDef<T | void>;
 }
 
-export function union<A, B>(
-  ...typedefs: [TypeDef<A>, TypeDef<B>]
-): TypeDef<[number, A | B]>;
-export function union<A, B, C>(
-  ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>]
-): TypeDef<[number, A | B | C]>;
-export function union<A, B, C, D>(
-  ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>, TypeDef<D>]
-): TypeDef<[number, A | B | C | D]>;
-export function union<A, B, C, D, E>(
-  ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>, TypeDef<D>, TypeDef<E>]
-): TypeDef<[number, A | B | C | D | E]>;
-export function union<A, B, C, D, E, F>(
-  ...typedefs: [
-    TypeDef<A>,
-    TypeDef<B>,
-    TypeDef<C>,
-    TypeDef<D>,
-    TypeDef<E>,
-    TypeDef<F>,
-  ]
-): TypeDef<[number, A | B | C | D | E | F]>;
-
-// deno-lint-ignore no-explicit-any
-export function union(...typedefs: TypeDef<any>[]): TypeDef<[number, any]> {
-  return {
-    type: "union",
-    byteLength: Math.max(...typedefs.map((t) => t.byteLength)),
-    typedefs,
+export type Union<A extends Attrs<any>> =
+  & Raw<ArrayBuffer>
+  & {
+    [K in keyof A]: (value: TypeOf<A[K]>) => ArrayBuffer;
   };
+
+export function union<T>(attrs: Attrs<T>): Union<Attrs<T>> {
+  let entries = Object.entries(attrs) as [keyof T, Attrs<T>[keyof T]][];
+
+  let byteLength = Math.max(
+    ...entries.map(([, typedef]) => typedef.byteLength),
+  );
+
+  let opaque = raw(byteLength);
+
+  let constructors = Object.fromEntries(
+    entries.map((
+      [key, typedef],
+    ) => [key, (value: any) => opaque.alloc(typedef, value)]),
+  );
+
+  return Object.assign(raw(byteLength), constructors) as Union<Attrs<T>>;
 }
+
+// export function union<A, B>(
+//   ...typedefs: [TypeDef<A>, TypeDef<B>]
+// ): TypeDef<[number, A | B]>;
+// export function union<A, B, C>(
+//   ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>]
+// ): TypeDef<[number, A | B | C]>;
+// export function union<A, B, C, D>(
+//   ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>, TypeDef<D>]
+// ): TypeDef<[number, A | B | C | D]>;
+// export function union<A, B, C, D, E>(
+//   ...typedefs: [TypeDef<A>, TypeDef<B>, TypeDef<C>, TypeDef<D>, TypeDef<E>]
+// ): TypeDef<[number, A | B | C | D | E]>;
+// export function union<A, B, C, D, E, F>(
+//   ...typedefs: [
+//     TypeDef<A>,
+//     TypeDef<B>,
+//     TypeDef<C>,
+//     TypeDef<D>,
+//     TypeDef<E>,
+//     TypeDef<F>,
+//   ]
+// ): TypeDef<[number, A | B | C | D | E | F]>;
+// // deno-lint-ignore no-explicit-any
+// export function union(...typedefs: TypeDef<any>[]): TypeDef<[number, any]> {
+//   return {
+
+//     byteLength: Math.max(...typedefs.map((t) => t.byteLength)),
+//     typedefs,
+//   };
+// }
 
 export function read<T>(
   typedef: TypeDef<T>,
@@ -159,10 +197,10 @@ export function read<T>(
       }
       return constant;
     }
+    case "raw":
+      return buffer.slice(offset, typedef.byteLength) as T;
     case "optional":
       return read(typedef.typedef, offset, buffer);
-    case "union":
-      throw new Error(`reading a union is not curretly supported`);
     case "uint8":
       return view.getUint8(0) as T;
     case "i32":
@@ -218,8 +256,12 @@ export function write<T>(
       }
       break;
     }
-    case "union": {
-      throw new Error(`writing unions not yet supported`);
+    case "raw": {
+      let source = new Uint8Array(value as ArrayBufferLike);
+      for (let i = 0; i < typedef.byteLength; i++) {
+        view.setUint8(offset + i, source[offset + i]);
+      }
+      break;
     }
   }
 }
@@ -241,3 +283,5 @@ function zero<T>(
   let view = new Uint8Array(buffer, offset, typedef.byteLength);
   view.fill(0);
 }
+
+//ClaySizingType.minMax({ min: 7, max: 6 })

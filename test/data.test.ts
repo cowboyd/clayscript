@@ -6,8 +6,11 @@ import {
   i32,
   optional,
   ptr,
+  raw,
   read,
   struct,
+  uint8,
+  union,
   write,
 } from "../typedef.ts";
 import { expect } from "@std/expect";
@@ -123,6 +126,63 @@ describe("linear data", () => {
       a: "Z",
       b: "Y",
     });
+  });
+
+  it("can read and write raw values", () => {
+    let buffer = new ArrayBuffer(100);
+    let view = new DataView(buffer);
+
+    let Point = struct({ x: f32(), y: f32() });
+
+    let TenBytes = raw(10);
+
+    let Type = struct({
+      before: uint8(),
+      raw: TenBytes,
+      after: uint8(),
+    });
+
+    let point = TenBytes.alloc(Point, { x: 6.0, y: 7 });
+    expect(point.byteLength).toEqual(10);
+
+    write(Type, 0, buffer, {
+      before: 123,
+      raw: point,
+      after: 255,
+    });
+
+    expect(view.getUint8(0)).toEqual(123);
+    expect(read(Point, 1, buffer)).toEqual({ x: 6, y: 7 });
+
+    let readback = read(Type, 0, buffer);
+    expect(read(Point, 0, readback.raw)).toEqual({ x: 6, y: 7 });
+
+    expect(view.getUint8(11)).toEqual(255);
+  });
+
+  it("has union types which can write raw segments of memory", () => {
+    let buffer = new ArrayBuffer(100);
+    //    let view = new DataView(buffer);
+    let Point = struct({ x: f32(), y: f32() });
+
+    let Union = union({
+      point: Point,
+      percent: f32(),
+    });
+
+    let Type = struct({
+      location: Union,
+      type: enumOf("POINT", "LOCATION"),
+    });
+
+    write(Type, 0, buffer, {
+      location: Union.point({ x: 6, y: 7 }),
+      type: "POINT",
+    });
+
+    let readback = read(Type, 0, buffer);
+    expect(readback.type).toEqual("POINT");
+    expect(read(Point, 0, readback.location)).toEqual({ x: 6, y: 7 });
   });
 });
 
