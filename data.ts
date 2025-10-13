@@ -28,6 +28,12 @@ export const ClayString = struct({
   chars: ptr(char()),
 });
 
+export const ClayStringSlice = struct({
+  length: i32(),
+  chars: ptr(char()),
+  baseChars: ptr(char()),
+});
+
 // Represents the type of error clay encountered while computing layout.
 export const ClayErrorType = enumOf(
   "ERROR_TYPE_TEXT_MEASUREMENT_FUNCTION_NOT_PROVIDED",
@@ -220,43 +226,82 @@ export const ClayElementDeclaration = struct({
   userData: ptr(),
 });
 
-// typedef struct Clay_ElementDeclaration {
-//     // Controls various settings that affect the size and position of an element, as well as the sizes and positions of any child elements.
-//     Clay_LayoutConfig layout;
-//     // Controls the background color of the resulting element.
-//     // By convention specified as 0-255, but interpretation is up to the renderer.
-//     // Iff no other config is specified, .backgroundColor will generate a RECTANGLE render command, otherwise it will be passed as a property to IMAGE or CUSTOM render commands.
-//     Clay_Color backgroundColor;
-//     // Controls the "radius", or corner rounding of elements, including rectangles, borders and images.
-//     Clay_CornerRadius cornerRadius;
-//     // Controls settings related to aspect ratio scaling.
-//     Clay_AspectRatioElementConfig aspectRatio;
-//     // Controls settings related to image elements.
-//     Clay_ImageElementConfig image;
-//     // Controls whether and how an element "floats", which means it layers over the top of other elements in z order, and doesn't affect the position and size of siblings or parent elements.
-//     // Note: in order to activate floating, .floating.attachTo must be set to something other than the default value.
-//     Clay_FloatingElementConfig floating;
-//     // Used to create CUSTOM render commands, usually to render element types not supported by Clay.
-//     Clay_CustomElementConfig custom;
-//     // Controls whether an element should clip its contents, as well as providing child x,y offset configuration for scrolling.
-//     Clay_ClipElementConfig clip;
-//     // Controls settings related to element borders, and will generate BORDER render commands.
-//     Clay_BorderElementConfig border;
-//     // A pointer that will be transparently passed through to resulting render commands.
-//     void *userData;
-// } Clay_ElementDeclaration;
+export const ClayBoundingBox = struct({
+  x: float(),
+  y: float(),
+  width: float(),
+  height: float(),
+});
+
+export const ClayRectangleRenderData = struct({
+  backgroundColor: ClayColor,
+  cornerRadius: ClayCornerRadius,
+});
+
+export const ClayTextRenderData = struct({
+  stringContents: ClayStringSlice,
+  textColor: ClayColor,
+  fontId: uint16(),
+  fontSize: uint16(),
+  letterSpacing: uint16(),
+  lineHeight: uint16(),
+});
+
+export const ClayImageRenderData = struct({
+  backgroundColor: ClayColor,
+  cornerRadius: ClayCornerRadius,
+  imageData: ptr(),
+});
+
+export const ClayCustomRenderData = struct({
+  backgroundColor: ClayColor,
+  cornerRadius: ClayCornerRadius,
+  customData: ptr(),
+});
+
+export const ClayBorderRenderData = struct({
+  color: ClayColor,
+  cornerRadius: ClayCornerRadius,
+  width: ClayBorderWidth,
+});
+
+export const ClayClipRenderData = struct({
+  horizontal: bool(),
+  vertical: bool(),
+});
+
+export const ClayRenderData = union({
+  rectangle: ClayRectangleRenderData,
+  text: ClayTextRenderData,
+  image: ClayImageRenderData,
+  custom: ClayCustomRenderData,
+  border: ClayBorderRenderData,
+  clip: ClayClipRenderData,
+});
+
+export const ClayRenderCommandType = enumOf(
+  "RENDER_COMMAND_TYPE_NONE",
+  "RENDER_COMMAND_TYPE_RECTANGLE",
+  "RENDER_COMMAND_TYPE_BORDER",
+  "RENDER_COMMAND_TYPE_TEXT",
+  "RENDER_COMMAND_TYPE_IMAGE",
+  "RENDER_COMMAND_TYPE_SCISSOR_START",
+  "RENDER_COMMAND_TYPE_SCISSOR_END",
+  "RENDER_COMMAND_TYPE_CUSTOM",
+);
+
+export const ClayRenderCommand = struct({
+  boundingBox: ClayBoundingBox,
+  renderData: ClayRenderData,
+  userData: ptr(),
+  id: uint32(),
+  zIndex: int16(),
+  commandType: ClayRenderCommandType
+});
 
 export const ClayRenderCommandArray = struct({
   capacity: i32(),
   length: i32(),
-  internalArray: ptr(i32()),
+  internalArray: ptr(ClayRenderCommand),
 });
 
-// typedef struct Clay_RenderCommandArray {
-//     // The underlying max capacity of the array, not necessarily all initialized.
-//     int32_t capacity;
-//     // The number of initialized elements in this array. Used for loops and iteration.
-//     int32_t length;
-//     // A pointer to the first element in the internal array.
-//     Clay_RenderCommand* internalArray;
-// } Clay_RenderCommandArray;
