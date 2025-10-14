@@ -130,6 +130,25 @@ export const ClayLayoutConfig = struct({
   layoutDirection: ClayLayoutDirection,
 });
 
+export const ClayTextElementConfig = struct({
+  userData: ptr(),
+  textColor: ClayColor,
+  fontId: uint16(),
+  fontSize: uint16(),
+  letterSpacing: uint16(),
+  lineHeight: uint16(),
+  wrapMode: enumOf(
+    "TEXT_WRAP_WORDS",
+    "TEXT_WRAP_NEWLINES",
+    "TEXT_WRAP_NONE",
+  ),
+  textAlignment: enumOf(
+    "TEXT_ALIGN_LEFT",
+    "TEXT_ALIGN_CENTER",
+    "TEXT_ALIGN_RIGHT",
+  ),
+});
+
 export const ClayCornerRadius = struct({
   topLeft: float(),
   topRight: float(),
@@ -137,7 +156,7 @@ export const ClayCornerRadius = struct({
   bottomRight: float(),
 });
 
-export const ClayAspectRatioConfig = struct({
+export const ClayAspectRatioElementConfig = struct({
   aspectRatio: float(),
 });
 
@@ -217,7 +236,7 @@ export const ClayElementDeclaration = struct({
   layout: ClayLayoutConfig,
   backgroundColor: ClayColor,
   cornerRadius: ClayCornerRadius,
-  aspectRatio: ClayAspectRatioConfig,
+  aspectRatio: ClayAspectRatioElementConfig,
   image: ClayImageElementConfig,
   floating: ClayFloatingElementConfig,
   custom: ClayCustomElementConfig,
@@ -296,7 +315,7 @@ export const ClayRenderCommand = struct({
   userData: ptr(),
   id: uint32(),
   zIndex: int16(),
-  commandType: ClayRenderCommandType
+  commandType: ClayRenderCommandType,
 });
 
 export const ClayRenderCommandArray = struct({
@@ -304,4 +323,3 @@ export const ClayRenderCommandArray = struct({
   length: i32(),
   internalArray: ptr(ClayRenderCommand),
 });
-

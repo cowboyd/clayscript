@@ -1,3 +1,11 @@
+import { Alloc, createAlloc } from "./alloc.ts";
+import {
+  ClayDimensions,
+  ClayStringSlice,
+  ClayTextElementConfig,
+} from "./data.ts";
+import { deref, ptr, read, TypeOf, uint32, write } from "./typedef.ts";
+
 export interface ClayNative {
   /**
    * Linear memory of the clay.c WASM module
@@ -18,7 +26,11 @@ export interface ClayNative {
    */
   minMemorySize: number;
 
-  createCallback(fn: () => void): Callback;
+  createCallback<TArgs extends unknown[]>(
+    fn: (...args: TArgs) => void,
+  ): Callback;
+
+  xfer: <T>(fn: (alloc: Alloc) => T) => T;
 
   clay: {
     MinMemorySize(): number;
@@ -29,7 +41,9 @@ export interface ClayNative {
       errorHandlerId: number,
     ): void;
     BeginLayout(): void;
-    EndLayout(ret: number): void;
+    EndLayout(commands: number): number;
+    StoreTextElementConfig(config: number): number;
+    OpenTextElement(text: number, config: number): void;
   };
 }
 
@@ -38,7 +52,17 @@ export interface Callback {
   release(): void;
 }
 
-export async function initClayNative(): Promise<ClayNative> {
+export interface InitClayNativeOptions {
+  measureTextFunction(
+    text: TypeOf<typeof ClayStringSlice>,
+    config: TypeOf<typeof ClayTextElementConfig>,
+    userdata: ArrayBufferLike,
+  ): TypeOf<typeof ClayDimensions>;
+}
+
+export async function initClayNative(
+  options: InitClayNativeOptions,
+): Promise<ClayNative> {
   let memory = new WebAssembly.Memory({
     initial: 50,
   });
@@ -54,8 +78,22 @@ export async function initClayNative(): Promise<ClayNative> {
 
   const mod = await WebAssembly.instantiate(bytes, {
     clay: {
-      measureTextFunction() {
-        return 0;
+      measureTextFunction(
+        textAdress: number,
+        configPointerAddress: number,
+        userDataAdress: number,
+      ) {
+        let text = read(ClayStringSlice, textAdress, memory.buffer);
+        let configPointer = read(uint32(), configPointerAddress, memory.buffer);
+        let config = deref(
+          ptr(ClayTextElementConfig),
+          configPointer,
+          memory.buffer,
+        );
+        let userData = memory.buffer.slice(userDataAdress);
+        let dimensions = options.measureTextFunction(text, config, userData);
+        write(ClayDimensions, xbuf, memory.buffer, dimensions);
+        return xbuf;
       },
       queryScrollOffsetFunction() {
         return 0;
@@ -94,7 +132,9 @@ export async function initClayNative(): Promise<ClayNative> {
     xbuf,
     arena,
     minMemorySize,
-    createCallback(fn: (...args: unknown[]) => unknown): Callback {
+    createCallback<TArgs extends unknown[]>(
+      fn: (...args: TArgs) => unknown,
+    ): Callback {
       let id = ids++;
       callbacks.set(id, fn);
       return {
@@ -102,6 +142,7 @@ export async function initClayNative(): Promise<ClayNative> {
         release: () => callbacks.delete(id),
       };
     },
+    xfer: (fn) => fn(createAlloc(memory.buffer, xbuf)),
     clay: mod.instance.exports as ClayNative["clay"],
   };
 }

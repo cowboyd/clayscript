@@ -24,40 +24,42 @@ void clayjs_OpenElementWithId(const Clay_ElementId *id) {
   return Clay__OpenElementWithId(*id);
 }
 
-EXPORT("CloseElement")
-void clayjs_CloseElement() { return Clay__CloseElement(); }
+EXPORT("StoreTextElementConfig")
+Clay_TextElementConfig *
+clayjs_StoreTextLElementConfig(Clay_TextElementConfig config) {
+  return Clay__StoreTextElementConfig(config);
+}
+
+EXPORT("OpenTextElement")
+void clayjs_OpenTextElement(Clay_String text, Clay_TextElementConfig *config) {
+  return Clay__OpenTextElement(text, config);
+}
+
+EXPORT("CloseElement") void clayjs_CloseElement() {
+  return Clay__CloseElement();
+}
 
 EXPORT("ConfigureOpenElement")
-void clayjs_ConfigureOpenElement(const Clay_ElementDeclaration *declaration) {
-  return Clay__ConfigureOpenElement(*declaration);
+void clayjs_ConfigureOpenElement(const Clay_ElementDeclaration declaration) {
+  return Clay__ConfigureOpenElement(declaration);
 }
 
 EXPORT("BeginLayout")
 void clayjs_BeginLayout() { Clay_BeginLayout(); }
 
 EXPORT("EndLayout")
-void clayjs_EndLayout(Clay_RenderCommandArray *dest) {
-  *dest = Clay_EndLayout();
+void clayjs_EndLayout(Clay_RenderCommandArray *result) {
+  *result = Clay_EndLayout();
 }
 
 EXPORT("Initialize")
 void *clayjs_Initialize(size_t size, void *memory,
-                        Clay_Dimensions *layoutDimensions,
+                        Clay_Dimensions layoutDimensions,
                         uint32_t errorHandlerId) {
 
   Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(size, memory);
   Clay_ErrorHandler errorHandler = {.errorHandlerFunction =
                                         errorHandlerFunction,
                                     .userData = (void *)errorHandlerId};
-  return Clay_Initialize(arena, *layoutDimensions, errorHandler);
+  return Clay_Initialize(arena, layoutDimensions, errorHandler);
 }
-
-/* typedef struct { */
-/*   uint32_t a; */
-/* } X; */
-
-
-/* EXPORT("tester") */
-/* void tester(uint32_t *ptr) { */
-/*   *ptr = sizeof(float); */
-/* } */

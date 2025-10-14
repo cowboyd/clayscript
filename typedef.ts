@@ -56,8 +56,7 @@ export type TypeDef<T> =
   | Enum<T>
   | Raw<T>;
 
-export type TypeOf<Def extends TypeDef<unknown>> = Def extends TypeDef<infer T>
-  ? T
+export type TypeOf<Def extends TypeDef<any>> = Def extends TypeDef<infer T> ? T
   : never;
 
 export const i32 = (): TypeDef<number> => ({ type: "i32", byteLength: 4 });
