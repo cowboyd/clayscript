@@ -1,6 +1,6 @@
-# jslay
+# ClayScript
 
-[Clay][clay] bindings for JavaScript
+Script [Clay][clay] with JavaScript
 
 This is an experiment in using clay as an ES module.
 
@@ -19,5 +19,19 @@ Then run the experiment
 ```shellsession
 deno main.ts
 ```
+## test
+
+Build tests
+
+```shellsession
+deno task build:tests
+```
+
+Run tests
+
+```ts
+deno test
+```
+
 
 [clay]: https://github.com/nicbarker/clay

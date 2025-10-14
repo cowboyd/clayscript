@@ -1,8 +1,5 @@
-#define CLAY_IMPLEMENTATION 
-
 #include "../clay.h"
 
-//TODO: fix js val
 uint32_t sizeofClayAspectRatioElementConfig() {
   return sizeof(Clay_AspectRatioElementConfig);
 }
