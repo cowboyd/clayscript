@@ -3,15 +3,26 @@ export type Attrs<T> = {
   [K in keyof T]: TypeDef<T[K]>;
 };
 
+export type LayoutElement<T> = {
+  type: "padding";
+  byteLength: number;
+} | {
+  type: "field";
+  name: string;
+  offset: number;
+  typedef: Attrs<T>[keyof Attrs<T>];
+};
+
 export type Struct<T> = {
   type: "struct";
   byteLength: number;
-  attrs: Attrs<T>;
-  entries: [keyof T, TypeDef<T[keyof T]>][];
+  byteAlign: 1 | 2 | 4;
+  layout: LayoutElement<T>[];
 };
 
 export type Num<T> = {
   type: "i32" | "f32" | "f64" | "uint8" | "uint16" | "uint32" | "int16";
+  byteAlign: 1 | 2 | 4;
   byteLength: number;
   T?: T;
 };
@@ -19,32 +30,29 @@ export type Num<T> = {
 export type Bool<T> = {
   type: "bool";
   byteLength: 1;
+  byteAlign: 1;
   T?: T;
 };
 
 export type Raw<T> = {
   type: "raw";
   byteLength: number;
+  byteAlign: 1 | 2 | 4;
   T?: T;
   alloc<A>(typedef: TypeDef<A>, value: A): ArrayBuffer;
-};
-
-export type Optional<T> = {
-  type: "optional";
-  numeric: boolean;
-  byteLength: number;
-  typedef: TypeDef<T>;
 };
 
 export type Ptr<T> = TypeDef<number> & {
   type: "i32";
   byteLength: 4;
+  byteAlign: 4;
   typedef: TypeDef<T>;
 };
 
 export type Enum<T> = {
   type: "enum";
   byteLength: 1;
+  byteAlign: 1;
   constants: T extends string ? T[] : never;
 };
 
@@ -52,31 +60,53 @@ export type TypeDef<T> =
   | Num<T>
   | Bool<T>
   | Struct<T>
-  | Optional<T>
   | Enum<T>
   | Raw<T>;
 
 export type TypeOf<Def extends TypeDef<any>> = Def extends TypeDef<infer T> ? T
   : never;
 
-export const i32 = (): TypeDef<number> => ({ type: "i32", byteLength: 4 });
-export const f32 = (): TypeDef<number> => ({ type: "f32", byteLength: 4 });
-export const f64 = (): TypeDef<number> => ({ type: "f64", byteLength: 8 });
-export const uint8 = (): TypeDef<number> => ({ type: "uint8", byteLength: 1 });
+export const i32 = (): TypeDef<number> => ({
+  type: "i32",
+  byteLength: 4,
+  byteAlign: 4,
+});
+export const f32 = (): TypeDef<number> => ({
+  type: "f32",
+  byteLength: 4,
+  byteAlign: 4,
+});
+export const f64 = (): TypeDef<number> => ({
+  type: "f64",
+  byteLength: 8,
+  byteAlign: 4,
+});
+export const uint8 = (): TypeDef<number> => ({
+  type: "uint8",
+  byteLength: 1,
+  byteAlign: 1,
+});
 export const uint16 = (): TypeDef<number> => ({
   type: "uint16",
   byteLength: 2,
+  byteAlign: 2,
 });
 export const uint32 = (): TypeDef<number> => ({
   type: "uint32",
+  byteAlign: 4,
   byteLength: 4,
 });
-export const int16 = (): TypeDef<number> => ({ type: "int16", byteLength: 2 });
+export const int16 = (): TypeDef<number> => ({
+  type: "int16",
+  byteLength: 2,
+  byteAlign: 2,
+});
 
 export function bool(): Bool<boolean> {
   return {
     type: "bool",
     byteLength: 1,
+    byteAlign: 1,
   };
 }
 
@@ -88,6 +118,7 @@ export const ptr = <T>(target: TypeDef<T> = char() as TypeDef<T>) =>
   ({
     type: "i32",
     byteLength: 4,
+    byteAlign: 4,
     typedef: target,
   }) as Ptr<T>;
 
@@ -95,14 +126,19 @@ export function enumOf<T extends string>(...constants: T[]): Enum<T> {
   return {
     type: "enum",
     byteLength: 1,
+    byteAlign: 1,
     constants,
   } as Enum<T>;
 }
 
-export function raw(byteLength: number): Raw<ArrayBuffer> {
+export function raw(
+  byteLength: number,
+  byteAlign: 1 | 2 | 4 = 1,
+): Raw<ArrayBuffer> {
   return {
     type: "raw",
     byteLength,
+    byteAlign,
     alloc<T>(typedef: TypeDef<T>, value: T): ArrayBuffer {
       let buffer = new ArrayBuffer(byteLength);
       write(typedef, 0, buffer, value);
@@ -118,28 +154,44 @@ export function struct<T extends object>(
     keyof Attrs<T>,
     Attrs<T>[keyof Attrs<T>],
   ][];
-  let byteLength = entries.map(([, typedef]) => typedef).reduce(
-    (sum, def) => sum + def.byteLength,
-    0,
-  );
+
+  let acc = {
+    layout: [] as Struct<T>["layout"],
+    offset: 0,
+  };
+
+  let byteAlign = Math.max(
+    ...entries.map(([, typedef]) => typedef.byteAlign),
+  ) as 1 | 2 | 4;
+
+  for (let [name, typedef] of entries) {
+    if ((acc.offset % typedef.byteAlign) !== 0) {
+      let padding = typedef.byteAlign - (acc.offset % typedef.byteAlign);
+      acc.layout.push({ type: "padding", byteLength: padding });
+      acc.offset += padding;
+    }  
+    
+    acc.layout.push({
+      type: "field",
+      name: name as string,
+      offset: acc.offset,
+      typedef,
+    });
+    acc.offset += typedef.byteLength;
+  }
+
+  if ((acc.offset % byteAlign) !== 0) {
+    let padding = byteAlign - (acc.offset % byteAlign);
+    acc.layout.push({ type: "padding", byteLength: padding });
+    acc.offset += padding;
+  }  
 
   return {
     type: "struct",
-    attrs,
-    entries,
-    byteLength,
+    layout: acc.layout,
+    byteLength: acc.offset,
+    byteAlign,
   };
-}
-
-export function optional<T>(typedef: TypeDef<T>): TypeDef<T | void> {
-  return {
-    type: "optional",
-    typedef,
-    numeric: typedef.type === "optional"
-      ? typedef.numeric
-      : ["i32", "f32", "i64", "f64"].includes(typedef.type),
-    byteLength: typedef.byteLength,
-  } as TypeDef<T | void>;
 }
 
 export type Union<A extends Attrs<any>> =
@@ -150,12 +202,15 @@ export type Union<A extends Attrs<any>> =
 
 export function union<T>(attrs: Attrs<T>): Union<Attrs<T>> {
   let entries = Object.entries(attrs) as [keyof T, Attrs<T>[keyof T]][];
+  let typedefs = entries.map(([, typedef]) => typedef);
 
-  let byteLength = Math.max(
-    ...entries.map(([, typedef]) => typedef.byteLength),
+  let largest = typedefs.reduce((max, typedef) =>
+    typedef.byteLength > max.byteLength ? typedef : max
   );
 
-  let opaque = raw(byteLength);
+  let { byteLength, byteAlign } = largest;
+  
+  let opaque = raw(byteLength, byteAlign);
 
   let constructors = Object.fromEntries(
     entries.map((
@@ -163,7 +218,7 @@ export function union<T>(attrs: Attrs<T>): Union<Attrs<T>> {
     ) => [key, (value: any) => opaque.alloc(typedef, value)]),
   );
 
-  return Object.assign(raw(byteLength), constructors) as Union<Attrs<T>>;
+  return Object.assign(raw(byteLength, byteAlign), constructors) as Union<Attrs<T>>;
 }
 
 export function read<T>(
@@ -174,14 +229,11 @@ export function read<T>(
   let view = new DataView(buffer, offset);
   switch (typedef.type) {
     case "struct":
-      return typedef.entries.reduce((acc, [key, typedef]) => {
-        return {
-          struct: Object.assign(acc.struct, {
-            [key]: read(typedef, acc.offset, buffer),
-          }),
-          offset: acc.offset + typedef.byteLength,
-        };
-      }, { struct: {}, offset }).struct as T;
+      return typedef.layout.reduce((acc, element) => {
+        return element.type === "padding" ? acc : Object.assign(acc, {
+          [element.name]: read(element.typedef, offset + element.offset, buffer),
+        });
+      }, {}) as T;
     case "enum": {
       let index = view.getUint8(0);
       let { constants } = typedef;
@@ -201,8 +253,6 @@ export function read<T>(
     }
     case "raw":
       return buffer.slice(offset, typedef.byteLength) as T;
-    case "optional":
-      return read(typedef.typedef, offset, buffer);
     case "uint8":
       return view.getUint8(0) as T;
     case "uint16":
@@ -220,11 +270,11 @@ export function read<T>(
   }
 }
 
-export function write<T>(
+export function write<const T>(
   typedef: TypeDef<T>,
   offset: number,
   buffer: ArrayBufferLike,
-  value: TypeDef<T>["type"] extends "struct" ? Partial<T> : T,
+  value: T,
 ): void {
   let view = new DataView(buffer, offset);
   switch (typedef.type) {
@@ -243,11 +293,11 @@ export function write<T>(
     case "f64":
       return view.setFloat64(0, value as number, true);
     case "struct": {
-      let base = offset;
-      for (let [key, def] of typedef.entries) {
-        let fvalue = value[key];
-        write(def, base, buffer, fvalue);
-        base += def.byteLength;
+      for (let element of typedef.layout) {
+        if (element.type === "field") {
+          let fvalue = value[element.name as keyof T];
+          write(element.typedef, offset + element.offset, buffer, fvalue);
+        }
       }
       break;
     }
@@ -264,14 +314,6 @@ export function write<T>(
     }
     case "bool": {
       view.setUint8(0, !value ? 0 : 1);
-      break;
-    }
-    case "optional": {
-      if (value == null) {
-        zero(typedef.typedef, offset, buffer);
-      } else {
-        write(typedef.typedef, offset, buffer, value);
-      }
       break;
     }
     case "raw": {
@@ -293,7 +335,7 @@ export function deref<T>(
   return read(ptr.typedef, address, buffer);
 }
 
-function zero<T>(
+export function zero<T>(
   typedef: TypeDef<T>,
   offset: number,
   buffer: ArrayBufferLike,
@@ -301,5 +343,3 @@ function zero<T>(
   let view = new Uint8Array(buffer, offset, typedef.byteLength);
   view.fill(0);
 }
-
-//ClaySizingType.minMax({ min: 7, max: 6 })

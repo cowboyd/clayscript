@@ -4,7 +4,6 @@ import {
   enumOf,
   f32,
   i32,
-  optional,
   ptr,
   raw,
   read,
@@ -60,34 +59,6 @@ describe("linear data", () => {
     expect(read(Line, 0, buffer)).toEqual({
       a: { x: 1, y: 2 },
       b: { x: 6, y: 7 },
-    });
-  });
-
-  it("zeros out optional fields", () => {
-    let buffer = new ArrayBuffer(20);
-    let Point = struct({
-      x: f32(),
-      y: f32(),
-    });
-
-    let Line = struct({
-      a: optional(Point),
-      b: optional(Point),
-    });
-
-    write(Line, 0, buffer, {
-      a: { x: 1, y: 2 },
-      b: { x: 6, y: 7 },
-    });
-
-    write(Line, 0, buffer, {
-      a: undefined,
-      b: { x: 3, y: 4 },
-    });
-
-    expect(read(Line, 0, buffer)).toEqual({
-      a: { x: 0, y: 0 },
-      b: { x: 3, y: 4 },
     });
   });
 
