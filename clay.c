@@ -20,19 +20,13 @@ EXPORT("MinMemorySize")
 uint32_t clayjs_MinMemorySize() { return Clay_MinMemorySize(); }
 
 EXPORT("OpenElementWithId")
-void clayjs_OpenElementWithId(const Clay_ElementId *id) {
-  return Clay__OpenElementWithId(*id);
-}
-
-EXPORT("StoreTextElementConfig")
-Clay_TextElementConfig *
-clayjs_StoreTextLElementConfig(Clay_TextElementConfig config) {
-  return Clay__StoreTextElementConfig(config);
+void clayjs_OpenElementWithId(const Clay_ElementId id) {
+  return Clay__OpenElementWithId(id);
 }
 
 EXPORT("OpenTextElement")
-void clayjs_OpenTextElement(Clay_String text, Clay_TextElementConfig *config) {
-  return Clay__OpenTextElement(text, config);
+void clayjs_OpenTextElement(Clay_String text, Clay_TextElementConfig config) {
+  return Clay__OpenTextElement(text, Clay__StoreTextElementConfig(config));
 }
 
 EXPORT("CloseElement") void clayjs_CloseElement() {
@@ -48,12 +42,12 @@ EXPORT("BeginLayout")
 void clayjs_BeginLayout() { Clay_BeginLayout(); }
 
 EXPORT("EndLayout")
-void clayjs_EndLayout(Clay_RenderCommandArray *result) {
-  *result = Clay_EndLayout();
+Clay_RenderCommandArray clayjs_EndLayout() {
+  return Clay_EndLayout();
 }
 
 EXPORT("Initialize")
-void *clayjs_Initialize(size_t size, void *memory,
+Clay_Context *clayjs_Initialize(size_t size, void *memory,
                         Clay_Dimensions layoutDimensions,
                         uint32_t errorHandlerId) {
 

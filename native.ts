@@ -41,7 +41,7 @@ export interface ClayNative {
       errorHandlerId: number,
     ): void;
     BeginLayout(): void;
-    EndLayout(commands: number): number;
+    EndLayout(return_ptr: number): void;
     StoreTextElementConfig(config: number): number;
     OpenTextElement(text: number, config: number): void;
   };

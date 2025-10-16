@@ -1,7 +1,7 @@
 import { pad, TypeDef, write } from "./typedef.ts";
 
 export interface Alloc {
-  <T>(typedef: TypeDef<T>, value: T): number;
+  <const T>(typedef: TypeDef<T>, value: T): number;
 }
 
 export function createAlloc(buffer: ArrayBufferLike, offset: number): Alloc {

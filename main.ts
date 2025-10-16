@@ -1,10 +1,13 @@
 import {
   ClayDimensions,
   ClayErrorData,
+  ClayRenderCommand,
   ClayRenderCommandArray,
+  ClayString,
+  ClayTextElementConfig,
 } from "./data.ts";
 import { initClayNative } from "./native.ts";
-import { read, TypeOf, write } from "./typedef.ts";
+import { raw, read, TypeOf } from "./typedef.ts";
 
 const native = await initClayNative({
   measureTextFunction(text) {
@@ -26,22 +29,57 @@ let errorHandler = native.createCallback(
   },
 );
 
-write(ClayDimensions, native.xbuf, native.memory.buffer, {
-  width: 120,
-  height: 60,
+native.xfer((alloc) => {
+  let dimensions = alloc(ClayDimensions, { width: 120, height: 60 });
+
+  clay.Initialize(
+    native.minMemorySize,
+    native.arena,
+    dimensions,
+    errorHandler.id,
+  );
+
+  clay.BeginLayout();
+
+  let bytes = new TextEncoder().encode("Hello World");
+  let chars = alloc(raw(bytes.byteLength), bytes.buffer);
+  let text = alloc(ClayString, {
+    isStaticallyAllocated: false,
+    chars,
+    length: bytes.byteLength,
+  });
+
+  let config = alloc(ClayTextElementConfig, {
+    fontId: 0,
+    fontSize: 16,
+    letterSpacing: 1,
+    lineHeight: 1,
+    textAlignment: "TEXT_ALIGN_LEFT",
+    userData: 0,
+    wrapMode: "TEXT_WRAP_WORDS",
+    textColor: { r: 255, g: 255, b: 255, a: 1 },
+  });
+
+  clay.OpenTextElement(text, config);
+
+  let result = alloc(ClayRenderCommandArray, {
+    capacity: 0,
+    length: 0,
+    internalArray: 0,
+  });
+
+  clay.EndLayout(result);
+
+  let commands = read(ClayRenderCommandArray, result, native.memory.buffer);
+
+  console.log(commands);
+
+  for (let i = 0; i < commands.length; i++) {
+    let command = read(
+      ClayRenderCommand,
+      commands.internalArray,
+      native.memory.buffer,
+    );
+    console.log({ command });
+  }
 });
-
-clay.Initialize(
-  native.minMemorySize,
-  native.arena,
-  native.xbuf,
-  errorHandler.id,
-);
-
-clay.BeginLayout();
-
-clay.EndLayout(native.xbuf);
-
-let commands = read(ClayRenderCommandArray, native.xbuf, native.memory.buffer);
-
-console.log({ commands });
