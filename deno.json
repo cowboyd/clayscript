@@ -1,7 +1,11 @@
 {
   "tasks": {
     "build": "clang -Os --target=wasm32 -nostdlib -Wl,--no-entry -Wl,--import-memory -Wl,--allow-undefined -Wl,--stack-first -Wl,--export-all -o clay.wasm clay.c",
-    "build:tests": "cd test && clang -Os --target=wasm32 -nostdlib -Wl,--no-entry  -Wl,--allow-undefined -Wl,--stack-first -Wl,--export-all -o sizeof.wasm sizeof.c"
+    "build:test:sizeof": "cd test && clang -Os --target=wasm32 -nostdlib -Wl,--no-entry  -Wl,--allow-undefined -Wl,--stack-first -Wl,--export-all -o sizeof.wasm sizeof.c",
+    "build:test:funcall": "cd test && clang -Os --target=wasm32 -nostdlib -Wl,--no-entry  -Wl,--allow-undefined -Wl,--stack-first -Wl,--export-all -o funcall.wasm funcall.c",
+    "build:tests": {
+      "dependencies": ["build:test:sizeof", "build:test:funcall"]
+    }
   },
   "lint": {
     "rules": {

@@ -5,11 +5,11 @@ export interface Alloc {
 }
 
 export function createAlloc(buffer: ArrayBufferLike, offset: number): Alloc {
-  let current = offset;
+  let latest = offset;
   return (typedef, value) => {
-    let address = current;
-    write(typedef, current, buffer, value);
-    current = current + typedef.byteLength;
+    let address = latest;
+    write(typedef, latest, buffer, value);
+    latest = latest + typedef.byteLength;
     return address;
   };
 }
