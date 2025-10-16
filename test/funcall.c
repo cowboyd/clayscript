@@ -2,9 +2,9 @@
 
 float returnsNumbers() { return 6.5; }
 
-void returnsStructs(Clay_Dimensions *result) {
+Clay_Dimensions returnsStructs() {
   Clay_Dimensions d = {.width = 1024, .height = 768};
-  *result = d;
+  return d;
 }
 
 uint32_t returnsPointersToStructs(void *memory) {

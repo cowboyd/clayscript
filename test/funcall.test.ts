@@ -2,7 +2,7 @@ import { beforeAll, describe, it } from "@std/testing/bdd";
 
 import * as wasm from "./funcall.wasm";
 import { expect } from "@std/expect";
-import { read, uint32, write } from "../typedef.ts";
+import { read, write } from "../typedef.ts";
 import { ClayDimensions } from "../data.ts";
 import { createAlloc } from "../alloc.ts";
 
@@ -40,13 +40,12 @@ describe("funcall", () => {
     expect(wasm.acceptsStructArguments(ptr, 1)).toEqual(1024);
   });
 
-  it.skip("accepts pointer arguments", () => {
+  it("accepts pointer arguments", () => {
     let alloc = createAlloc(wasm.memory.buffer, heap_base);
     let dimensions = alloc(ClayDimensions, { height: 6, width: 7 });
-    let ptr = alloc(uint32(), dimensions);
 
-    expect(wasm.acceptsPointerArguments(ptr, 0)).toEqual(6);
-    expect(wasm.acceptsPointerArguments(ptr, 1)).toEqual(7);
+    expect(wasm.acceptsPointerArguments(dimensions, 0)).toEqual(6);
+    expect(wasm.acceptsPointerArguments(dimensions, 1)).toEqual(7);
   });
 
   // it("invokes callbacks with structs", () => {
