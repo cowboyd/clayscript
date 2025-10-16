@@ -17,7 +17,7 @@ deno task build
 Then run the experiment
 
 ```shellsession
-deno main.ts
+deno run -A main.ts
 ```
 
 ## test
