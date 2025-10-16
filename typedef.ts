@@ -1,7 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
+
 export type Attrs<T> = {
   [K in keyof T]: TypeDef<T[K]>;
 };
+
+export type Alignment = 1 | 2 | 4 | 8;
 
 export type LayoutElement<T> = {
   type: "padding";
@@ -16,13 +19,13 @@ export type LayoutElement<T> = {
 export type Struct<T> = {
   type: "struct";
   byteLength: number;
-  byteAlign: 1 | 2 | 4;
+  byteAlign: Alignment;
   layout: LayoutElement<T>[];
 };
 
 export type Num<T> = {
   type: "i32" | "f32" | "f64" | "uint8" | "uint16" | "uint32" | "int16";
-  byteAlign: 1 | 2 | 4;
+  byteAlign: Alignment;
   byteLength: number;
   T?: T;
 };
@@ -37,7 +40,7 @@ export type Bool<T> = {
 export type Raw<T> = {
   type: "raw";
   byteLength: number;
-  byteAlign: 1 | 2 | 4;
+  byteAlign: Alignment;
   T?: T;
   alloc<A>(typedef: TypeDef<A>, value: A): ArrayBuffer;
 };
@@ -79,7 +82,7 @@ export const f32 = (): TypeDef<number> => ({
 export const f64 = (): TypeDef<number> => ({
   type: "f64",
   byteLength: 8,
-  byteAlign: 4,
+  byteAlign: 8,
 });
 export const uint8 = (): TypeDef<number> => ({
   type: "uint8",
@@ -133,7 +136,7 @@ export function enumOf<T extends string>(...constants: T[]): Enum<T> {
 
 export function raw(
   byteLength: number,
-  byteAlign: 1 | 2 | 4 = 1,
+  byteAlign: Alignment = 1,
 ): Raw<ArrayBuffer> {
   return {
     type: "raw",
