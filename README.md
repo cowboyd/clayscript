@@ -19,6 +19,7 @@ Then run the experiment
 ```shellsession
 deno main.ts
 ```
+
 ## test
 
 Build tests
@@ -32,6 +33,5 @@ Run tests
 ```ts
 deno test
 ```
-
 
 [clay]: https://github.com/nicbarker/clay

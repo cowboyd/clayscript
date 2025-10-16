@@ -168,12 +168,12 @@ export function struct<T extends object>(
   ) as 1 | 2 | 4;
 
   for (let [name, typedef] of entries) {
-    if ((acc.offset % typedef.byteAlign) !== 0) {
-      let padding = typedef.byteAlign - (acc.offset % typedef.byteAlign);
+    let padding = pad(acc.offset, typedef.byteAlign);
+    if (padding > 0) {
       acc.layout.push({ type: "padding", byteLength: padding });
       acc.offset += padding;
-    }  
-    
+    }
+
     acc.layout.push({
       type: "field",
       name: name as string,
@@ -183,11 +183,11 @@ export function struct<T extends object>(
     acc.offset += typedef.byteLength;
   }
 
-  if ((acc.offset % byteAlign) !== 0) {
-    let padding = byteAlign - (acc.offset % byteAlign);
+  let padding = pad(acc.offset, byteAlign);
+  if (padding > 0) {
     acc.layout.push({ type: "padding", byteLength: padding });
     acc.offset += padding;
-  }  
+  }
 
   return {
     type: "struct",
@@ -212,7 +212,7 @@ export function union<T>(attrs: Attrs<T>): Union<Attrs<T>> {
   );
 
   let { byteLength, byteAlign } = largest;
-  
+
   let opaque = raw(byteLength, byteAlign);
 
   let constructors = Object.fromEntries(
@@ -221,7 +221,9 @@ export function union<T>(attrs: Attrs<T>): Union<Attrs<T>> {
     ) => [key, (value: any) => opaque.alloc(typedef, value)]),
   );
 
-  return Object.assign(raw(byteLength, byteAlign), constructors) as Union<Attrs<T>>;
+  return Object.assign(raw(byteLength, byteAlign), constructors) as Union<
+    Attrs<T>
+  >;
 }
 
 export function read<T>(
@@ -234,7 +236,11 @@ export function read<T>(
     case "struct":
       return typedef.layout.reduce((acc, element) => {
         return element.type === "padding" ? acc : Object.assign(acc, {
-          [element.name]: read(element.typedef, offset + element.offset, buffer),
+          [element.name]: read(
+            element.typedef,
+            offset + element.offset,
+            buffer,
+          ),
         });
       }, {}) as T;
     case "enum": {
@@ -345,4 +351,12 @@ export function zero<T>(
 ): void {
   let view = new Uint8Array(buffer, offset, typedef.byteLength);
   view.fill(0);
+}
+
+export function pad(offset: number, alignment: number): number {
+  if ((offset % alignment) !== 0) {
+    return alignment - (offset % alignment);
+  } else {
+    return 0;
+  }
 }
