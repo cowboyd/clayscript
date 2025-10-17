@@ -1,6 +1,6 @@
 #define CLAY_IMPLEMENTATION
 #define CLAY_WASM
-#include "clay.h"
+#include "clay/clay.h"
 #include <stdint.h>
 
 #define EXPORT(name) __attribute__((export_name(name)))

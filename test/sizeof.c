@@ -1,4 +1,4 @@
-#include "../clay.h"
+#include "../clay/clay.h"
 
 uint32_t sizeofClayAspectRatioElementConfig() {
   return sizeof(Clay_AspectRatioElementConfig);

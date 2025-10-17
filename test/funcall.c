@@ -1,4 +1,4 @@
-#include "../clay.h"
+#include "../clay/clay.h"
 
 float returnsNumbers() { return 6.5; }
 
