@@ -19,6 +19,17 @@ static void errorHandlerFunction(Clay_ErrorData data) {
 EXPORT("MinMemorySize")
 uint32_t clayjs_MinMemorySize() { return Clay_MinMemorySize(); }
 
+EXPORT("SetPointerState")
+void clayjs_SetPointerState(Clay_Vector2 position, bool isPointerDown) {
+  Clay_SetPointerState(position, isPointerDown);
+}
+
+EXPORT("UpdateScrollContainers")
+void clayjs_UpdateScrollContainers(bool enableDragScrolling,
+                                   Clay_Vector2 scrollDelta, float deltaTime) {
+  Clay_UpdateScrollContainers(enableDragScrolling, scrollDelta, deltaTime);
+}
+
 EXPORT("OpenElementWithId")
 void clayjs_OpenElementWithId(const Clay_ElementId id) {
   return Clay__OpenElementWithId(id);
@@ -42,14 +53,12 @@ EXPORT("BeginLayout")
 void clayjs_BeginLayout() { Clay_BeginLayout(); }
 
 EXPORT("EndLayout")
-Clay_RenderCommandArray clayjs_EndLayout() {
-  return Clay_EndLayout();
-}
+Clay_RenderCommandArray clayjs_EndLayout() { return Clay_EndLayout(); }
 
 EXPORT("Initialize")
 Clay_Context *clayjs_Initialize(size_t size, void *memory,
-                        Clay_Dimensions layoutDimensions,
-                        uint32_t errorHandlerId) {
+                                Clay_Dimensions layoutDimensions,
+                                uint32_t errorHandlerId) {
 
   Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(size, memory);
   Clay_ErrorHandler errorHandler = {.errorHandlerFunction =

@@ -40,6 +40,8 @@ export interface ClayNative {
       dimensions: number,
       errorHandlerId: number,
     ): void;
+    SetPointerState(position: number, isPointerDown: boolean): void;
+    UpdateScrollContainers(enableDragScrolling: boolean, scrollDelta: number, deltaTime: number): void;
     BeginLayout(): void;
     EndLayout(return_ptr: number): void;
     StoreTextElementConfig(config: number): number;
