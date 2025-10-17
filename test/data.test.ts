@@ -3,6 +3,8 @@ import {
   deref,
   enumOf,
   f32,
+  f64,
+  float,
   i32,
   ptr,
   raw,
@@ -99,7 +101,21 @@ describe("linear data", () => {
     });
   });
 
-  it("can read and write raw values", () => {
+  it("can read and write raw values as a buffer", () => {
+    let buffer = new ArrayBuffer(100);
+
+    let bytes = new ArrayBuffer(8);
+
+    new DataView(bytes).setFloat64(0, 67, true);
+
+    let Type = raw(8);
+
+    write(Type, 8, buffer, bytes);
+
+    expect(new DataView(buffer).getFloat64(8, true)).toEqual(67);
+  });
+
+  it("can read and write raw values from a struct", () => {
     let buffer = new ArrayBuffer(100);
     let view = new DataView(buffer);
 
@@ -154,6 +170,36 @@ describe("linear data", () => {
     let readback = read(Type, 0, buffer);
     expect(readback.type).toEqual("POINT");
     expect(read(Point, 0, readback.location)).toEqual({ x: 6, y: 7 });
+  });
+
+  it("zeros out struct members that not explicitly defined", () => {
+    let Type = struct({
+      byte: uint8(),
+      child: struct({
+        a: float(),
+        b: float(),
+      }),
+      raw: raw(8),
+    });
+    let buffer = new ArrayBuffer(50);
+
+    write(Type, 0, buffer, {
+      byte: 10,
+      child: { a: 6, b: 7 },
+      raw: raw(8).alloc(f64(), 10),
+    });
+
+    let before = read(Type, 0, buffer);
+
+    let view = new DataView(before.raw);
+    expect(view.getFloat64(0, true)).toEqual(10);
+
+    write(Type, 0, buffer, {});
+
+    let result = read(Type, 0, buffer);
+    expect(result.byte).toEqual(0);
+    expect(result.child).toEqual({ a: 0, b: 0 });
+    expect([...new Uint8Array(result.raw)]).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
   });
 });
 

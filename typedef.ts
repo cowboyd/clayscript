@@ -261,7 +261,7 @@ export function read<T>(
       return (value !== 0 as unknown) as T;
     }
     case "raw":
-      return buffer.slice(offset, typedef.byteLength) as T;
+      return buffer.slice(offset, offset + typedef.byteLength) as T;
     case "uint8":
       return view.getUint8(0) as T;
     case "uint16":
@@ -280,7 +280,19 @@ export function read<T>(
 }
 
 export function write<const T>(
+  typedef: Struct<T>,
+  offset: number,
+  buffer: ArrayBufferLike,
+  value: Partial<T>,
+): void;
+export function write<const T>(
   typedef: TypeDef<T>,
+  offset: number,
+  buffer: ArrayBufferLike,
+  value: T,
+): void;
+export function write<const T>(
+  typedef: TypeDef<T> | Struct<T>,
   offset: number,
   buffer: ArrayBufferLike,
   value: T,
@@ -305,7 +317,11 @@ export function write<const T>(
       for (let element of typedef.layout) {
         if (element.type === "field") {
           let fvalue = value[element.name as keyof T];
-          write(element.typedef, offset + element.offset, buffer, fvalue);
+          if (typeof fvalue !== "undefined") {
+            write(element.typedef, offset + element.offset, buffer, fvalue);
+          } else {
+            zero(element.typedef, offset + element.offset, buffer);
+          }
         }
       }
       break;
@@ -326,9 +342,9 @@ export function write<const T>(
       break;
     }
     case "raw": {
-      let source = new Uint8Array(value as ArrayBufferLike);
+      let source = new DataView(value as ArrayBufferLike);
       for (let i = 0; i < typedef.byteLength; i++) {
-        view.setUint8(offset + i, source[offset + i]);
+        view.setUint8(i, source.getUint8(i));
       }
       break;
     }
