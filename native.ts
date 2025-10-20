@@ -1,10 +1,11 @@
 import { Alloc, createAlloc } from "./alloc.ts";
 import {
   ClayDimensions,
+  ClayErrorData,
   ClayStringSlice,
   ClayTextElementConfig,
 } from "./data.ts";
-import { deref, ptr, read, TypeOf, uint32, write } from "./typedef.ts";
+import { read, TypeOf, write } from "./typedef.ts";
 
 export interface ClayNative {
   /**
@@ -26,10 +27,6 @@ export interface ClayNative {
    */
   minMemorySize: number;
 
-  createCallback<TArgs extends unknown[]>(
-    fn: (...args: TArgs) => void,
-  ): Callback;
-
   xfer: <T>(fn: (alloc: Alloc) => T) => T;
 
   clay: {
@@ -38,7 +35,6 @@ export interface ClayNative {
       size: number,
       memory: number,
       dimensions: number,
-      errorHandlerId: number,
     ): void;
     SetPointerState(position: number, isPointerDown: boolean): void;
     UpdateScrollContainers(
@@ -64,6 +60,7 @@ export interface InitClayNativeOptions {
     config: TypeOf<typeof ClayTextElementConfig>,
     userdata: ArrayBufferLike,
   ): TypeOf<typeof ClayDimensions>;
+  handleErrorFunction(data: TypeOf<typeof ClayErrorData>): void;
 }
 
 export async function initClayNative(
@@ -74,13 +71,6 @@ export async function initClayNative(
   });
   const location = new URL("./clay.wasm", import.meta.url);
   const bytes = await Deno.readFile(location.pathname);
-
-  let ids = 0;
-  const callbacks = new Map<number, () => void>();
-
-  function invokeCallback(id: number, arg: number) {
-    console.log("callback", { id, arg });
-  }
 
   const mod = await WebAssembly.instantiate(bytes, {
     clay: {
@@ -97,8 +87,12 @@ export async function initClayNative(
         write(ClayDimensions, returnAddress, memory.buffer, dimensions);
       },
       queryScrollOffsetFunction: () => {},
+      handleErrorFunction(dataAddress: number) {
+        let data = read(ClayErrorData, dataAddress, memory.buffer);
+        return options.handleErrorFunction(data);
+      },
     },
-    env: { memory, invokeCallback },
+    env: { memory },
   });
 
   let clay = mod.instance.exports as ClayNative["clay"];
@@ -131,16 +125,6 @@ export async function initClayNative(
     xbuf,
     arena,
     minMemorySize,
-    createCallback<TArgs extends unknown[]>(
-      fn: (...args: TArgs) => unknown,
-    ): Callback {
-      let id = ids++;
-      callbacks.set(id, fn);
-      return {
-        id,
-        release: () => callbacks.delete(id),
-      };
-    },
     xfer: (fn) => fn(createAlloc(memory.buffer, xbuf)),
     clay: mod.instance.exports as ClayNative["clay"],
   };

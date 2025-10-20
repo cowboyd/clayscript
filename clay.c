@@ -8,13 +8,8 @@
 /**
  * Invoke a callback from C back into javascript.
  */
-__attribute__((import_module("env"), import_name("invokeCallback"))) extern void
-invokeCallback(uint32_t callback_id, void *argument);
-
-static void errorHandlerFunction(Clay_ErrorData data) {
-  uint32_t callbackId = (uint32_t)data.userData;
-  invokeCallback(callbackId, &data);
-}
+__attribute__((import_module("clay"), import_name("handleErrorFunction"))) extern void
+clayjs_handleError(Clay_ErrorData data);
 
 EXPORT("MinMemorySize")
 uint32_t clayjs_MinMemorySize() { return Clay_MinMemorySize(); }
@@ -57,12 +52,8 @@ Clay_RenderCommandArray clayjs_EndLayout() { return Clay_EndLayout(); }
 
 EXPORT("Initialize")
 Clay_Context *clayjs_Initialize(size_t size, void *memory,
-                                Clay_Dimensions layoutDimensions,
-                                uint32_t errorHandlerId) {
-
+                                Clay_Dimensions layoutDimensions) {
   Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(size, memory);
-  Clay_ErrorHandler errorHandler = {.errorHandlerFunction =
-                                        errorHandlerFunction,
-                                    .userData = (void *)errorHandlerId};
+  Clay_ErrorHandler errorHandler = {.errorHandlerFunction = clayjs_handleError};
   return Clay_Initialize(arena, layoutDimensions, errorHandler);
 }

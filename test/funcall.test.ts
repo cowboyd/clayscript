@@ -47,5 +47,4 @@ describe("funcall", () => {
     expect(wasm.acceptsPointerArguments(dimensions, 0)).toEqual(6);
     expect(wasm.acceptsPointerArguments(dimensions, 1)).toEqual(7);
   });
-
 });

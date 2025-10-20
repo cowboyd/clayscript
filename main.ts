@@ -1,6 +1,5 @@
 import {
   ClayDimensions,
-  ClayErrorData,
   ClayRenderCommand,
   ClayRenderCommandArray,
   ClayString,
@@ -8,7 +7,7 @@ import {
   ClayTextRenderData,
 } from "./data.ts";
 import { initClayNative } from "./native.ts";
-import { raw, read, TypeOf } from "./typedef.ts";
+import { raw, read } from "./typedef.ts";
 
 const native = await initClayNative({
   measureTextFunction(text) {
@@ -17,18 +16,15 @@ const native = await initClayNative({
       width: text.length,
     };
   },
-});
-
-let { clay } = native;
-
-let errorHandler = native.createCallback(
-  (data: TypeOf<typeof ClayErrorData>) => {
+  handleErrorFunction(data) {
     let { errorText } = data;
     let bytes = native.memory.buffer.slice(errorText.chars, errorText.length);
     let text = new TextDecoder().decode(bytes);
     console.error(`${data.errorType}: ${text}`);
   },
-);
+});
+
+let { clay } = native;
 
 native.xfer((alloc) => {
   let { rows, columns } = Deno.consoleSize();
@@ -38,7 +34,6 @@ native.xfer((alloc) => {
     native.minMemorySize,
     native.arena,
     dimensions,
-    errorHandler.id,
   );
 
   clay.BeginLayout();
