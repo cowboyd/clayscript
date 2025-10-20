@@ -41,7 +41,11 @@ export interface ClayNative {
       errorHandlerId: number,
     ): void;
     SetPointerState(position: number, isPointerDown: boolean): void;
-    UpdateScrollContainers(enableDragScrolling: boolean, scrollDelta: number, deltaTime: number): void;
+    UpdateScrollContainers(
+      enableDragScrolling: boolean,
+      scrollDelta: number,
+      deltaTime: number,
+    ): void;
     BeginLayout(): void;
     EndLayout(return_ptr: number): void;
     StoreTextElementConfig(config: number): number;
@@ -81,25 +85,18 @@ export async function initClayNative(
   const mod = await WebAssembly.instantiate(bytes, {
     clay: {
       measureTextFunction(
+        returnAddress: number,
         textAdress: number,
-        configPointerAddress: number,
+        configAddress: number,
         userDataAdress: number,
       ) {
         let text = read(ClayStringSlice, textAdress, memory.buffer);
-        let configPointer = read(uint32(), configPointerAddress, memory.buffer);
-        let config = deref(
-          ptr(ClayTextElementConfig),
-          configPointer,
-          memory.buffer,
-        );
+        let config = read(ClayTextElementConfig, configAddress, memory.buffer);
         let userData = memory.buffer.slice(userDataAdress);
         let dimensions = options.measureTextFunction(text, config, userData);
-        write(ClayDimensions, xbuf, memory.buffer, dimensions);
-        return xbuf;
+        write(ClayDimensions, returnAddress, memory.buffer, dimensions);
       },
-      queryScrollOffsetFunction() {
-        return 0;
-      },
+      queryScrollOffsetFunction: () => {},
     },
     env: { memory, invokeCallback },
   });

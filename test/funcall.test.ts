@@ -48,7 +48,4 @@ describe("funcall", () => {
     expect(wasm.acceptsPointerArguments(dimensions, 1)).toEqual(7);
   });
 
-  // it("invokes callbacks with structs", () => {
-
-  // });
 });
