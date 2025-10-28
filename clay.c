@@ -25,6 +25,11 @@ void clayjs_UpdateScrollContainers(bool enableDragScrolling,
   Clay_UpdateScrollContainers(enableDragScrolling, scrollDelta, deltaTime);
 }
 
+EXPORT("HashString")
+Clay_ElementId clayjs_HashString(Clay_String key, const uint32_t seed) {
+  return Clay__HashString(key, seed);
+}
+
 EXPORT("OpenElementWithId")
 void clayjs_OpenElementWithId(const Clay_ElementId id) {
   return Clay__OpenElementWithId(id);

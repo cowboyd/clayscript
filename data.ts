@@ -80,6 +80,11 @@ const ClaySizingType = enumOf(
   "SIZING_TYPE_FIXED",
 );
 
+export const ClaySizingAxisSize = union({
+  minMax: ClaySizingMinMax,
+  percent: float(),
+});
+
 export const ClaySizingAxis = struct({
   size: union({
     minMax: ClaySizingMinMax,

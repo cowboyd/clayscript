@@ -1,13 +1,7 @@
-import {
-  ClayDimensions,
-  ClayRenderCommand,
-  ClayRenderCommandArray,
-  ClayString,
-  ClayTextElementConfig,
-  ClayTextRenderData,
-} from "./data.ts";
+import { createClay, paddingAll } from "./clay.ts";
+import { ClayRectangleRenderData, ClayTextRenderData } from "./data.ts";
 import { initClayNative } from "./native.ts";
-import { raw, read } from "./typedef.ts";
+import { read } from "./typedef.ts";
 
 const native = await initClayNative({
   measureTextFunction(text) {
@@ -18,74 +12,61 @@ const native = await initClayNative({
   },
   handleErrorFunction(data) {
     let { errorText } = data;
-    let bytes = native.memory.buffer.slice(errorText.chars, errorText.length);
+    let bytes = native.memory.buffer.slice(
+      errorText.chars,
+      errorText.chars + errorText.length,
+    );
     let text = new TextDecoder().decode(bytes);
     console.error(`${data.errorType}: ${text}`);
   },
 });
 
-let { clay } = native;
+let { rows: height, columns: width } = Deno.consoleSize();
 
-native.xfer((alloc) => {
-  let { rows, columns } = Deno.consoleSize();
-  let dimensions = alloc(ClayDimensions, { width: columns, height: rows });
+let clay = createClay(native, { height, width });
 
-  clay.Initialize(
-    native.minMemorySize,
-    native.arena,
-    dimensions,
-  );
+clay.beginLayout();
 
-  clay.BeginLayout();
+clay.openElement("parent", { layout: { padding: paddingAll(8) } });
 
-  let bytes = new TextEncoder().encode("Hello World!");
-  let chars = alloc(raw(bytes.byteLength), bytes.buffer);
-  let text = alloc(ClayString, {
-    isStaticallyAllocated: false,
-    chars,
-    length: bytes.byteLength,
-  });
+clay.text("Hello World", { fontSize: 16 });
 
-  let config = alloc(ClayTextElementConfig, {
-    fontSize: 16,
-  });
+clay.openElement("child", { backgroundColor: { r: 255, g: 0, b: 0, a: 1 } });
 
-  clay.OpenTextElement(text, config);
+clay.text("Goodbye World", { fontSize: 16 });
 
-  let result = alloc(ClayRenderCommandArray, {
-    capacity: 0,
-    length: 0,
-    internalArray: 0,
-  });
+clay.closeElement();
 
-  clay.EndLayout(result);
+clay.closeElement();
 
-  let commands = read(ClayRenderCommandArray, result, native.memory.buffer);
+let commands = clay.endLayout();
 
-  console.log("COMMAND COUNT: ", commands.length);
-
-  for (let i = 0; i < commands.length; i++) {
-    let command = read(
-      ClayRenderCommand,
-      commands.internalArray,
-      native.memory.buffer,
-    );
-
-    switch (command.commandType) {
-      case "RENDER_COMMAND_TYPE_TEXT": {
-        let { id, boundingBox, zIndex } = command;
-        let renderData = read(ClayTextRenderData, 0, command.renderData);
-        console.log("TEXT", {
-          id,
-          boundingBox,
-          zIndex,
-          renderData,
-        });
-        break;
-      }
-      default: {
-        console.log({ command });
-      }
+for (let command of commands) {
+  switch (command.commandType) {
+    case "RENDER_COMMAND_TYPE_TEXT": {
+      let { id, boundingBox, zIndex } = command;
+      let renderData = read(ClayTextRenderData, 0, command.renderData);
+      console.log(command.commandType, {
+        id,
+        boundingBox,
+        zIndex,
+        renderData,
+      });
+      break;
+    }
+    case "RENDER_COMMAND_TYPE_RECTANGLE": {
+      let { id, boundingBox, zIndex } = command;
+      let renderData = read(ClayRectangleRenderData, 0, command.renderData);
+      console.log(command.commandType, {
+        id,
+        boundingBox,
+        zIndex,
+        renderData,
+      });
+      break;
+    }
+    default: {
+      console.log({ command });
     }
   }
-});
+}

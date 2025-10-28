@@ -46,6 +46,10 @@ export interface ClayNative {
     EndLayout(return_ptr: number): void;
     StoreTextElementConfig(config: number): number;
     OpenTextElement(text: number, config: number): void;
+    HashString(returnAddr: number, key: number, seed: number): void;
+    OpenElementWithId(id: number): void;
+    ConfigureOpenElement(declaration: number): void;
+    CloseElement(): void;
   };
 }
 

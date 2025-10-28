@@ -1,7 +1,7 @@
-import { pad, Struct, TypeDef, write } from "./typedef.ts";
+import { pad, Props, Struct, TypeDef, write } from "./typedef.ts";
 
 export interface Alloc {
-  <const T>(struct: Struct<T>, value: Partial<T>): number;
+  <const T>(struct: Struct<T>, value: Props<T>): number;
   <const T>(typedef: TypeDef<T>, value: T): number;
 }
 

@@ -4,6 +4,11 @@ export type Attrs<T> = {
   [K in keyof T]: TypeDef<T[K]>;
 };
 
+export type Props<T> = {
+  [P in keyof T]?: T[P] extends object ? Props<T[P]>
+    : T[P];
+};
+
 export type Alignment = 1 | 2 | 4 | 8;
 
 export type LayoutElement<T> = {
@@ -283,7 +288,7 @@ export function write<const T>(
   typedef: Struct<T>,
   offset: number,
   buffer: ArrayBufferLike,
-  value: Partial<T>,
+  value: Props<T>,
 ): void;
 export function write<const T>(
   typedef: TypeDef<T>,
