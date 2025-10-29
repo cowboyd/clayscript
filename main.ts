@@ -1,7 +1,11 @@
 import { createClay, paddingAll } from "./clay.ts";
-import { ClayRectangleRenderData, ClayTextRenderData } from "./data.ts";
+import {
+  ClayBorderRenderData,
+  ClayRectangleRenderData,
+  ClayTextRenderData,
+} from "./data.ts";
 import { initClayNative } from "./native.ts";
-import { read } from "./typedef.ts";
+import { raw, read } from "./typedef.ts";
 
 const native = await initClayNative({
   measureTextFunction(text) {
@@ -27,7 +31,10 @@ let clay = createClay(native, { height, width });
 
 clay.beginLayout();
 
-clay.openElement("parent", { layout: { padding: paddingAll(8) } });
+clay.openElement("parent", {
+  layout: { padding: paddingAll(8) },
+  border: { width: { top: 1, right: 1, bottom: 1, left: 1 } },
+});
 
 clay.text("Hello World", { fontSize: 16 });
 
@@ -46,10 +53,15 @@ for (let command of commands) {
     case "RENDER_COMMAND_TYPE_TEXT": {
       let { id, boundingBox, zIndex } = command;
       let renderData = read(ClayTextRenderData, 0, command.renderData);
+      let { length, chars } = renderData.stringContents;
+
+      let contents = read(raw(length), chars, native.memory.buffer);
+
       console.log(command.commandType, {
         id,
         boundingBox,
         zIndex,
+        contents: new TextDecoder().decode(contents),
         renderData,
       });
       break;
@@ -61,6 +73,17 @@ for (let command of commands) {
         id,
         boundingBox,
         zIndex,
+        renderData,
+      });
+      break;
+    }
+    case "RENDER_COMMAND_TYPE_BORDER": {
+      let { id, zIndex, boundingBox } = command;
+      let renderData = read(ClayBorderRenderData, 0, command.renderData);
+      console.log(command.commandType, {
+        id,
+        zIndex,
+        boundingBox,
         renderData,
       });
       break;
